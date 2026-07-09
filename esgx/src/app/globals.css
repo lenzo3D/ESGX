@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  background: #000;
+  color: #d2d4d8;
+  font-size: 13px;
+}
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #34363c;
+  border: 3px solid #000;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #45474e;
+}
+
+/* flat terminal panels */
+.panel-title {
+  @apply flex h-8 flex-none items-center gap-2 border-b border-line bg-titlebar px-3 text-[11px] font-bold uppercase tracking-wide text-txt;
+}
+.badge {
+  @apply inline-flex items-center px-2 py-[1px] text-[9.5px] font-bold uppercase tracking-wide;
+}
+.mtable {
+  @apply w-full border-collapse text-left text-[11.5px];
+}
+.mtable th,
+.mtable td {
+  @apply border border-line px-2 py-1.5;
+}
+.mtable th {
+  @apply bg-titlebar text-[9.5px] font-bold uppercase tracking-wide text-txt2;
+}
+.mtable .vc-cell {
+  @apply font-bold;
+}

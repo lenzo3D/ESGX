@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESG Momentum Engine 2.0 — Consensus Gap Scanner</title>
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- top bar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 21c0-6 2.5-10 8-12-1 6-3.5 9.5-8 12Z" fill="#06241a"/>
+            <path d="M12 21C8 17 4 16 3 9c5 1 8 4 9 9Z" fill="#082c1f"/>
+            <path d="M12 21V9" stroke="#06241a" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="word"><b>ESG MOMENTUM</b><span>ENGINE</span></div>
+        <span class="ver">2.0</span>
+      </div>
+
+      <div class="tdiv"></div>
+
+      <div class="ticker" id="ticker-header"><!-- filled by JS --></div>
+
+      <div class="spacer"></div>
+
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-view="scanner">Scanner</button>
+        <button class="tab" data-view="shortlist">Shortlist</button>
+      </nav>
+
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg>
+        <input id="search" type="text" placeholder="Search symbol…" autocomplete="off" />
+      </label>
+
+      <div class="pill"><span class="dot"></span>RATINGS · JUN 2026</div>
+
+      <button class="icon-btn" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      </button>
+    </header>
+
+    <!-- workspace -->
+    <main class="workspace" id="workspace">
+      <!-- left: watchlist -->
+      <section class="col col-left" id="left-col">
+        <div class="panel-head">
+          <h2>Watchlist</h2>
+          <span class="count" id="wl-count"></span>
+          <div class="ph-spacer"></div>
+          <button class="mini-select" id="sort-btn">
+            <span id="sort-label">Spread ▾</span>
+          </button>
+        </div>
+        <div class="filter-row" id="filter-row"></div>
+        <div class="wl-colhead"><span>Company</span><span>Spread</span><span>Mom</span></div>
+        <div class="watchlist" id="watchlist"></div>
+      </section>
+
+      <!-- middle: quadrant -->
+      <section class="col col-mid" id="mid-col">
+        <div class="panel-head quad-head">
+          <h2>Consensus-Gap Quadrant</h2>
+          <span class="count">20 SGX names</span>
+          <div class="ph-spacer"></div>
+          <div class="legend" id="legend"></div>
+          <button class="meth-btn" id="meth-btn" title="How the scoring works">METHODOLOGY</button>
+        </div>
+        <div class="quad-wrap" id="quad-wrap">
+          <svg id="quad-svg" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="q-tip" id="q-tip"></div>
+        </div>
+      </section>
+
+      <!-- right: drill-down -->
+      <section class="col col-right" id="right-col">
+        <div class="panel-head">
+          <h2>Company Detail</h2>
+          <div class="ph-spacer"></div>
+          <span class="count" id="detail-asof"></span>
+        </div>
+        <div class="detail" id="detail"></div>
+      </section>
+    </main>
+
+    <!-- status bar -->
+    <footer class="statusbar">
+      <span class="ok"><span class="dot"></span>DEMO · STATIC SNAPSHOT</span>
+      <span class="sb-sep">|</span>
+      <span>ESG MOMENTUM ENGINE 2.0</span>
+      <div class="sb-spacer"></div>
+      <span id="sb-stats"></span>
+      <span class="sb-sep">|</span>
+      <span id="sb-clock"></span>
+      <span class="sb-sep">|</span>
+      <span>MODEL <b>CONSENSUS-GAP&nbsp;v2</b> · NOT INVESTMENT ADVICE</span>
+    </footer>
+  </div>
+
+  <div id="modal-root"></div>
+
+  <script src="src/data.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
