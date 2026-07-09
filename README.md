@@ -1,65 +1,121 @@
-# ESG Momentum Engine 2.0 — Consensus Gap Scanner
+# ESGX
 
-A trading-terminal-style ESG dashboard for fund managers. It plots 20 SGX-listed
-companies on a **disagreement × momentum** quadrant to surface names that are
-*mispriced* because the four big raters (MSCI, LSEG, Sustainalytics, S&P Global)
-disagree while the news flow points one way and the official rating hasn't caught up.
+**“Most ESG tools rate the past. ESGX monitors what is changing now.”**
 
-The whole pitch is one move: **disagreement × momentum → a verdict.**
+ESGX converts verified disclosures and live ESG events into auditable investment
+signals for fund managers. Next.js (App Router) · TypeScript · Tailwind · Recharts ·
+Lucide · Anthropic SDK.
+
+> **Mock prototype data.** Every number in this MVP is clearly-labelled mock data,
+> structured so the data module can be swapped for Supabase/live feeds without touching
+> the UI or the scoring engine.
 
 ## Run it
 
-No build step, no install. Two options:
+Node 22 is installed locally at `~/.local/node22` (no system install was available).
+Either add it to your PATH once:
 
-**A. Just open it** — double-click `index.html`.
-
-**B. Serve it** (recommended, avoids any browser file:// quirks):
 ```bash
+export PATH="$HOME/.local/node22/bin:$PATH"   # add to ~/.zshrc to persist
 cd "Hackathon Prototype"
-python3 -m http.server 8123
-# then open http://127.0.0.1:8123
+npm run dev        # http://localhost:3000
 ```
 
-## The three screens
+…or just use the launcher script, which sets PATH itself:
 
-1. **Scanner (home)** — the Consensus-Gap Quadrant is the hero. X = rater
-   disagreement (spread), Y = news momentum. Dark-horse corner (top-right) shaded
-   green, hidden-risk corner (bottom-right) shaded red. Every dot is coloured by
-   verdict. Hover a dot for the read; click to drill down. The left **watchlist**
-   and right **company detail** panel stay in sync with the chart.
-2. **Company detail (right panel)** — the four rater scores side by side so the
-   disagreement is *visible*, the spread + flag, momentum, the verdict badge, and
-   the one-line PM read.
-3. **Shortlist** — Dark Horses (buy early), Rating Lags Risk (downgrade warning),
-   and Hidden Risks (avoid) as three ranked, clickable lists.
+```bash
+./dev.sh      # http://localhost:3000
+```
 
-## Verdict colour language (consistent everywhere)
+## Environment variables
 
-| Verdict | Meaning | Colour |
+All optional — keys are only for the LLM features and never reach the browser:
+
+```bash
+cp .env.example .env.local
+```
+
+| Key | Cost | What it unlocks |
 |---|---|---|
-| **Dark Horse** | raters split + momentum BUY → mispriced upside | green |
-| **Consensus Rise** | raters agree + momentum BUY | blue |
-| **Contested** | raters split + HOLD | yellow |
-| **Stable** | raters agree + HOLD | grey |
-| **Rating Lags Risk** | raters agree + momentum SELL → downgrade early-warning | orange |
-| **Hidden Risk** | raters split + momentum SELL → avoid / short | red |
+| `GEMINI_API_KEY` | **Free** (aistudio.google.com, no card) | LLM-quality news classification + AI Analyst summaries |
+| `ANTHROPIC_API_KEY` | Paid (prepaid credits) | Same features via Claude (used if no Gemini key) |
+| *(no keys)* | Free | Everything else still works — live news collection runs, and a deterministic **keyword classifier** labels events (marked as such, lower confidence) |
 
-Each verdict has a distinct hue (no two greens / two ambers) and all six appear in the
-chart legend. Click **METHODOLOGY** in the quadrant header for the full scoring logic
-(rater normalisation, thresholds, coverage caveat, momentum, verdict matrix).
+Classification priority: **Gemini → Claude → keyword rules**. Every live event shows
+which classifier labelled it.
 
-## Design notes
+## Live data pipeline (real, not mock)
 
-Modelled on Interactive Brokers' Trader Workstation (Mosaic): flat, hard-edged, dense,
-true-black panels with solid colour cells — no gradients, glows, or translucent buttons.
-Type is standard and system-safe: **Times New Roman** for titles/headings, **Arial** for
-data and UI. Layout reflows responsively (3-column → narrower → stacked) down to phone width.
+Each company page has a **"Pull live news"** button that runs the exact pipeline the
+Methodology tab describes:
 
-## Files
+1. **Collect** — real articles from **GDELT** (free public feed, 15-min refresh; falls
+   back to Google News RSS automatically when GDELT rate-limits — it allows one request
+   per 5 seconds per IP).
+2. **Classify** — Claude labels each *real* headline (E/S/G, severity, impact,
+   confidence). AI never generates facts. Requires `ANTHROPIC_API_KEY`; without it the
+   real articles still display, marked "unclassified".
+3. **Compute** — the deterministic engine recomputes momentum:
+   `Momentum = Σ(direction × impact × source weight × recency decay)`.
 
-- `index.html` — app shell
-- `src/styles.css` — design system (dark trading-terminal theme)
-- `src/app.js` — rendering + interactions (vanilla JS, no framework)
-- `src/data.js` — the 20-company dataset, inlined (generated from `esg_scanner_data.json`)
+Results are cached server-side for 15 minutes (GDELT's own cadence). Live events show
+clickable source links and a "Live feed" badge; rater scores deliberately remain a
+static illustrative snapshot — that contrast (live signal vs stale ratings) **is** the
+product story.
 
-All data is precomputed — the app only loads and renders it. No backend, no API.
+## Product rules (what makes this defensible)
+
+- **AI never invents ESG facts, figures, sources, or scores.** It summarises,
+  classifies, explains, and flags — using only the data package sent to it.
+- **The final ESG score is computed by the deterministic engine** in
+  `src/lib/esgScoring.ts`: sector weights (banks G-45%, tech S/G-35%, autos E-45%),
+  controversy penalties from events, confidence adjustment — with a human-readable
+  calculation trace shown in the UI.
+- **No source → no classification.** Severe or low-confidence events go to Human Review.
+- The negative call is always **AVOID** (short-selling is restricted in several ASEAN
+  markets).
+- One vocabulary everywhere: **Hidden improver · Proven improver · Hidden risk ·
+  Clear risk · No clear signal**.
+
+## The ESGX API (PolyFinTech100 is an API hackathon — this is the product)
+
+The dashboard is one client of a machine-readable signal API:
+
+```bash
+curl http://localhost:3000/api/signals          # ranked universe: verdict · call · momentum · rater split
+curl http://localhost:3000/api/signal/J69U      # full company signal + engine breakdown + live events
+curl -X POST http://localhost:3000/api/pipeline/refresh \
+     -H 'Content-Type: application/json' -d '{"ticker":"J69U"}'   # trigger a live news pull
+```
+
+Unknown tickers return an honest 404 with the covered universe. All responses carry
+`asOf`, the model tag, and the not-investment-advice disclaimer.
+
+## Tabs
+
+| Tab | What it shows |
+|---|---|
+| **Watchlist** (home) | 23 covered names (20 SGX + AAPL/MSFT/TSLA) + the company story column: verdict, call, momentum, news drivers, Does vs Says, rater snapshot, why-ratings-lag |
+| **Map** | The consensus-gap quadrant, full-screen; colour + filled/outlined dual encoding; click a dot to open the company |
+| **Live ESG Events** | All events, newest first, with severity/confidence/review badges |
+| **Comparison** | Two deep-coverage names side by side + pillar chart |
+| **AI Analyst** | Claude-generated summary of the verified data package (needs API key) |
+| **Human Review** | Approve / Reject / Request more evidence on flagged events (local state) |
+| **Track record** | Real official index events; flag dates pending team reconstruction |
+| **Methodology** | Collection → filtering → formula → reliability → guardrails + the 0.54 divergence card |
+
+## Demo path (on stage)
+
+1. Open **Watchlist** — Frasers Centrepoint Trust (J69U) is pre-selected: *Hidden
+   improver*, BUY, momentum +12, GRESB/green-loan events, "why the ratings lag".
+2. **Map** — point at the top-right corner: raters disagree + momentum improving; click
+   another dot to show navigation.
+3. **Methodology** — the momentum formula and the "AI labels, never generates" line.
+4. If a key is configured: **AI Analyst** → Generate AI ESG Summary on Frasers.
+
+## What still needs the team
+
+- **Track record flag dates** — supply your reconstructed dates in
+  `src/data/mockCompanies.ts` (`TRACK_RECORD`); they are deliberately not invented.
+- Rows marked **“To verify”** need the official event dates confirmed against the index
+  provider's published review notices.
